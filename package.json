@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node --test",
     "dev": "nodemon -e js,json,yaml server.js",
+    "build": "prisma generate",
     "start": "node server.js",
     "seed": "node seedAdmin.js",
     "postinstall": "prisma generate",
