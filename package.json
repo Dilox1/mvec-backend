@@ -39,6 +39,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@types/multer": "^2.2.0",
     "jest": "^30.5.1",
     "mongodb-memory-server": "^11.2.0",
     "prisma": "6.12.0",
