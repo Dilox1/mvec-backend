@@ -3,6 +3,9 @@ const router = express.Router();
 const disputeController = require("../controllers/dispute.controller");
 const { protect, authorize } = require("../middleware/auth.middleware"); // Adjust middleware import path if needed
 
+// List disputes (role-scoped)
+router.get("/", protect, disputeController.getDisputes);
+
 // Open a dispute case for an order
 router.post("/", protect, disputeController.openDispute);
 

@@ -3,6 +3,14 @@ const router = express.Router();
 const wholesaleController = require("../controllers/wholesale.controller");
 const { protect, authorize } = require("../middleware/auth.middleware"); // Adjust import path if needed
 
+// List my wholesale orders (vendor or supplier)
+router.get(
+  "/orders/mine",
+  protect,
+  authorize("vendor", "supplier", "super_admin"),
+  wholesaleController.getMyWholesaleOrders
+);
+
 // Vendor creates supply order (MOQ check enforced)
 router.post(
   "/orders",

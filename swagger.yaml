@@ -4,7 +4,7 @@ info:
   description: Consolidated OpenAPI 3.0 specification covering Authentication, Cart, Orders, Products, Stores, Staff Management, Double-Entry Ledger, Commission Rules, Payment Webhooks, B2B Wholesale, Disputes & Arbitration, and Affiliate Marketing Engine.
   version: 1.0.0
 servers:
-  - url: https://mvec-backend-production.up.railway.app/api
+  - url: http://localhost:4000/api
     description: Local Development Server
 
 paths:

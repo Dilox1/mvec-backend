@@ -4,7 +4,7 @@ info:
   description: Complete OpenAPI 3.0 specification generated from existing Express routes (Auth, Cart, Orders, Payouts, Products, and Store Profiles).
   version: 1.0.0
 servers:
-  - url: https://mvec-backend-production.up.railway.app/api
+  - url: http://localhost:4000/api
     description: Local Development Server
 
 paths:

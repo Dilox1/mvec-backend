@@ -1,6 +1,42 @@
 const prisma = require("../lib/prisma");
 const financialService = require("../services/financial.service");
 
+// @desc    Super Admin: list real payment transactions, paginated + filterable
+// @route   GET /api/admin/payments?status=&method=&q=&page=&pageSize=
+exports.getAdminPayments = async (req, res) => {
+  try {
+    const { status, method, q, page = 1, pageSize = 20 } = req.query;
+
+    const where = {};
+    if (status) where.status = status;
+    if (method) where.method = method;
+    if (q) {
+      where.OR = [
+        { transactionReference: { contains: q } },
+        { gatewayReference: { contains: q } },
+      ];
+    }
+
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limit = Math.min(parseInt(pageSize, 10) || 20, 100);
+
+    const [payments, total] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        include: { parentOrder: { include: { user: { select: { fullName: true } } } } },
+        orderBy: { createdAt: "desc" },
+        skip: (pageNum - 1) * limit,
+        take: limit,
+      }),
+      prisma.payment.count({ where }),
+    ]);
+
+    return res.status(200).json({ data: payments, meta: { page: pageNum, pageSize: limit, total } });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Super Admin control center overview: live counts and today's activity
 // @route   GET /api/admin/overview
 exports.getAdminOverview = async (req, res) => {

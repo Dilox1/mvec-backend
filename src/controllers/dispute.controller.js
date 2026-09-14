@@ -1,5 +1,42 @@
 const disputeService = require("../services/dispute.service");
 const socketService = require("../services/socket.service");
+const prisma = require("../lib/prisma");
+
+// @desc    List disputes, scoped by role: super_admin sees all, a vendor sees
+//          disputes against their own products, a buyer sees disputes they raised
+// @route   GET /api/disputes?status=&page=&pageSize=
+exports.getDisputes = async (req, res) => {
+  try {
+    const { status, page = 1, pageSize = 20 } = req.query;
+
+    const where = {};
+    if (status) where.status = status;
+    if (req.user.role === "vendor") where.vendorId = req.user.id;
+    else if (req.user.role !== "super_admin") where.raisedById = req.user.id;
+
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limit = Math.min(parseInt(pageSize, 10) || 20, 100);
+
+    const [disputes, total] = await Promise.all([
+      prisma.dispute.findMany({
+        where,
+        include: {
+          order: { select: { orderNumber: true } },
+          raisedBy: { select: { fullName: true } },
+          vendor: { select: { fullName: true, companyName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (pageNum - 1) * limit,
+        take: limit,
+      }),
+      prisma.dispute.count({ where }),
+    ]);
+
+    return res.status(200).json({ data: disputes, meta: { page: pageNum, pageSize: limit, total } });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 exports.openDispute = async (req, res) => {
   try {

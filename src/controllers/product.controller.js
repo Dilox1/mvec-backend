@@ -62,11 +62,16 @@ const shapeProductPayload = (body) => {
 };
 
 // @desc    Get all active products for buyers (Public)
-// @route   GET /api/products
+// @route   GET /api/products?vendorId=&categoryId=
 exports.getAllProducts = async (req, res) => {
   try {
+    const { vendorId, categoryId } = req.query;
+    const where = { status: "ACTIVE" };
+    if (vendorId) where.vendorId = vendorId;
+    if (categoryId) where.categoryId = categoryId;
+
     const products = await prisma.product.findMany({
-      where: { status: "ACTIVE" },
+      where,
       include: productInclude,
       orderBy: { createdAt: "desc" },
     });
