@@ -5,6 +5,9 @@ const { protect, authorize } = require("../middleware/auth.middleware");
 
 // Generate referral link
 router.post("/links", protect, affiliateController.generateLink);
+router.get("/links", protect, affiliateController.getMyLinks);
+router.get("/wallet", protect, affiliateController.getMyWallet);
+router.get("/payouts", protect, affiliateController.getMyPayouts);
 
 // Public click tracking endpoint
 router.get("/track/:code", affiliateController.trackClick);

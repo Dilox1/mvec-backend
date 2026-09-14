@@ -306,29 +306,22 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email || typeof email !== "string" || !email.trim()) {
-      return res.status(400).json({
-        message: "Email is required",
-      });
+      return res.status(400).json({ message: "Email is required" });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const genericResponse = {
+      message: "If an account exists with that email, a verification code has been sent.",
+    };
 
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
-
-    // Email does not exist in the database
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
-      return res.status(404).json({
-        message: "This email was not found in our database.",
-      });
+      return res.status(200).json(genericResponse);
     }
 
-    // Google account check
     if (!user.password && user.googleId) {
       return res.status(400).json({
-        message:
-          "This account was created using Google Sign-In. Please log in with Google.",
+        message: "This account was created using Google Sign-In. Please log in with Google.",
       });
     }
 
@@ -336,35 +329,21 @@ exports.forgotPassword = async (req, res) => {
       where: {
         email: normalizedEmail,
         purpose: "password_reset",
-        lastSentAt: {
-          gt: new Date(Date.now() - RESET_OTP_COOLDOWN_MS),
-        },
+        lastSentAt: { gt: new Date(Date.now() - RESET_OTP_COOLDOWN_MS) },
       },
     });
-
     if (recent) {
       return res.status(429).json({
-        message: `Please wait ${Math.ceil(
-          RESET_OTP_COOLDOWN_MS / 1000
-        )}s before requesting a new code.`,
+        message: `Please wait ${Math.ceil(RESET_OTP_COOLDOWN_MS / 1000)}s before requesting a new code.`,
       });
     }
 
     const code = generateOtpCode(6);
-    const codeHash = crypto
-      .createHash("sha256")
-      .update(code)
-      .digest("hex");
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
 
     await prisma.otp.updateMany({
-      where: {
-        email: normalizedEmail,
-        purpose: "password_reset",
-        consumed: false,
-      },
-      data: {
-        consumed: true,
-      },
+      where: { email: normalizedEmail, purpose: "password_reset", consumed: false },
+      data: { consumed: true },
     });
 
     await prisma.otp.create({
@@ -381,27 +360,17 @@ exports.forgotPassword = async (req, res) => {
 
     try {
       await sendResetOtpEmail(user.email, code);
-
       return res.status(200).json({
-        message: "Verification code has been sent to your email.",
-        ...(process.env.NODE_ENV === "development" && {
-          devCode: code,
-        }),
+        ...genericResponse,
+        ...(process.env.NODE_ENV === "development" && { devCode: code }),
       });
     } catch (emailError) {
       console.error("Email Sending Error:", emailError.message);
-
-      return res.status(500).json({
-        message:
-          "Could not send the verification code email. Please try again later.",
-      });
+      return res.status(500).json({ message: "Could not send the verification code email. Please try again later." });
     }
   } catch (error) {
     console.error("Forgot Password Error:", error);
-
-    return res.status(500).json({
-      message: "Failed to process request",
-    });
+    return res.status(500).json({ message: "Failed to process request" });
   }
 };
 

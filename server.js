@@ -1,5 +1,6 @@
 const express = require("express");
 const http = require("http");
+const path = require("path");
 const dotenv = require("dotenv");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -18,23 +19,37 @@ dotenv.config();
 
 const app = express();
 
-app.use(helmet());
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
+app.use(
+  helmet({
+    // Uploaded product/profile images are served from this API but loaded
+    // by the frontend on a different origin (and, in production, a
+    // different domain), the default same-origin resource policy would
+    // silently block <img> tags from loading them.
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 app.use(
   cors({
     origin: "*",
     credentials: true,
   }),
 );
-// app.use(express.json());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({
-  limit: "50mb",
-  extended: true,
-}));
-
+// Uploaded images now go through real multipart/form-data uploads (see
+// /api/uploads), not base64 strings in JSON, so this only needs to be big
+// enough for ordinary request bodies.
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(morgan("dev"));
 
+// Serve uploaded images as plain static files.
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use("/api/auth", require("./src/routes/auth.routes"));
+app.use("/api/uploads", require("./src/routes/upload.routes"));
 app.use("/api/users", require("./src/routes/user.routes"));
 app.use("/api/search", require("./src/routes/search.routes"));
 app.use("/api/products", require("./src/routes/product.routes"));

@@ -585,7 +585,7 @@ model Product {
 
   status ProductStatus @default(DRAFT)
 
-  mainImage  String @db.Text
+  mainImage  String
   gallery    Json @default("[]")
   thumbnails Json @default("[]")
   videos     Json @default("[]")

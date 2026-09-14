@@ -1,4 +1,5 @@
 const affiliateService = require("../services/affiliate.service");
+const prisma = require("../lib/prisma");
 
 exports.generateLink = async (req, res) => {
   try {
@@ -77,5 +78,54 @@ exports.adminProcessPayout = async (req, res) => {
     });
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get my own affiliate links with real click/conversion stats
+// @route   GET /api/affiliates/links
+exports.getMyLinks = async (req, res) => {
+  try {
+    const links = await prisma.affiliateLink.findMany({
+      where: { affiliateUserId: req.user.id },
+      include: { targetProduct: { select: { id: true, name: true, mainImage: true, price: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(200).json({ success: true, data: links });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get my own affiliate wallet balance
+// @route   GET /api/affiliates/wallet
+exports.getMyWallet = async (req, res) => {
+  try {
+    const wallet = await prisma.affiliateWallet.upsert({
+      where: { affiliateUserId: req.user.id },
+      update: {},
+      create: { affiliateUserId: req.user.id },
+    });
+
+    const totalEarned = wallet.pendingBalance + wallet.availableBalance + wallet.totalWithdrawn;
+
+    return res.status(200).json({ success: true, data: { ...wallet, totalEarned } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get my own affiliate payout request history
+// @route   GET /api/affiliates/payouts
+exports.getMyPayouts = async (req, res) => {
+  try {
+    const payouts = await prisma.affiliatePayout.findMany({
+      where: { affiliateUserId: req.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(200).json({ success: true, data: payouts });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
